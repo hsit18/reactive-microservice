@@ -1,28 +1,74 @@
+buildscript {
+	repositories {
+		maven { url "https://plugins.gradle.org/m2/" }
+		mavenCentral()
+		maven { url 'https://repo.maven.apache.org/maven2/' }
+	}
+	dependencies {
+		classpath "org.openapitools:openapi-generator-gradle-plugin:6.6.0"
+	}
+}
+
 plugins {
-	id 'org.springframework.boot' version '2.7.4'
-	id 'io.spring.dependency-management' version '1.0.14.RELEASE'
 	id 'java'
+	id 'org.springframework.boot' version "${springBootVersion}"
+	id 'io.spring.dependency-management' version '1.1.4'
+	id "org.openapi.generator" version "6.6.0"
+}
+
+repositories {
+	mavenCentral()
+	maven { url "https://packages.confluent.io/maven/" }
 }
 
 group = 'com.hsit18.myapp'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+java {
+	sourceCompatibility = '17'
+}
 
-repositories {
-	mavenCentral()
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+openApiGenerate {
+	generatorName.set("spring")
+	inputSpec.set("$rootDir/src/main/resources/openapi/api.yaml")
+	outputDir.set("$rootDir/src/main/generated")
+	apiPackage.set("com.hsit18.myapp.controller")
+	invokerPackage.set("com.hsit18.myapp.invoker")
+	modelPackage.set("com.hsit18.myapp.dto")
+	configOptions.set([
+			"dateLibrary": "java8",
+			"useTags": "true",
+			"library": "spring-boot",
+			"interfaceOnly": "true",
+			"skipDefaultInterface":"true",
+			"delegatePattern": "true",
+			"performBeanValidation":"true",
+			"unhandledException":"true",
+			"identifierNamingConvention": "original",
+			"reactive":"true"
+	])
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.3'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.projectlombok:lombok:1.18.24'
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	annotationProcessor 'org.projectlombok:lombok'
 }
+compileJava.dependsOn tasks.named("openApiGenerate")
 
 tasks.named('test') {
 	useJUnitPlatform()
